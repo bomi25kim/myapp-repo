@@ -1,0 +1,1316 @@
+    1  ls -al ${HOME}/.aws/credentials
+    2  rm -vf ${HOME}/.aws/credentials
+    3  pwd
+    4  ls -al
+    5  aws sts get-caller-identity --query Arn | grep HandsOn-Admin-bomi25kim
+    6  sudo pip install --upgrade awscli
+    7  aws --version
+    8  sudo curl -o /usr/local/bin/kubectl     https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/linux/amd64/kubectl
+    9  sudo chmod +x /usr/local/bin/kubectl
+   10  kubectl version --client=true --short=true
+   11  sudo yum install -y jq
+   12  sudo yum install -y bash-completion
+   13  curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+   14  sudo mv -v /tmp/eksctl /usr/local/bin
+   15  eksctl version
+   16  aws configure get default.region
+   17  export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
+   18  echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
+   19  aws configure set default.region ${AWS_REGION}
+   20  aws configure get default.region
+   21  export ACCOUNT_ID=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.accountId')
+   22  echo "export ACCOUNT_ID=${ACCOUNT_ID}" | tee -a ~/.bash_profile
+   23  cd ~/environment/
+   24  git clone https://github.com/sghaha/sample-nodejs-backend.git
+   25  cd sample-nodejs-backend
+   26  npm install
+   27  aws ecr create-repository --repository-name sample-nodejs-backend --image-scanning-configuration scanOnPush=true --region ${AWS_REGION}
+   28  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+   29  cd ~/environment/sample-nodejs-backend
+   30  docker build -t sample-nodejs-backend .
+   31  docker tag sample-nodejs-backend:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-nodejs-backend:latest
+   32  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-nodejs-backend:latest/dynamic/instance-identity/document
+   33  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-nodejs-backend:latest
+   34  docker images -a
+   35  docker rmi --force 0fba047d0ef1
+   36  docker images -a
+   37  cd ~/environment/
+   38  git clone https://github.com/sghaha/sample-react-app.git
+   39  cd sample-react-app
+   40  npm install
+   41  mkdir build
+   42  ls -al
+   43  aws ecr create-repository --repository-name sample-react-app --image-scanning-configuration scanOnPush=true --region ${AWS_REGION}
+   44  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+   45  cd ~/environment/sample-react-app
+   46  ls -al
+   47  pwd
+   48  npm install
+   49  npm run build
+   50  docker build -t sample-react-app .
+   51  docker tag sample-react-app:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+   52  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+   53  docker images -a
+   54  docker rmi --force c3f18c41f212
+   55  docker images -a
+   56  cd ~/environment
+   57  cd manifests
+   58  cat << EOF > eks-demo-cluster.yaml
+   59  ---
+   60  apiVersion: eksctl.io/v1alpha5
+   61  kind: ClusterConfig
+   62  metadata:
+   63    name: eks-demo # 생성할 EKS 클러스터명
+   64    region: ${AWS_REGION} # 클러스터를 생성할 리전
+   65    version: "1.21"
+   66  vpc:
+   67    cidr: "192.168.0.0/16" # 클러스터에서 사용할 VPC의 CIDR
+   68  managedNodeGroups:
+   69    - name: node-group # 클러스터의 노드 그룹명
+   70      instanceType: t3.small # 클러스터 워커 노드의 인스턴스 타입
+   71      desiredCapacity: 2 # 클러스터 워커 노드의 갯수
+   72      volumeSize: 10  # 클러스터 워커 노드의 EBS 용량 (단위: GiB)
+   73      ssh:
+   74        enableSsm: true
+   75      iam:
+   76        withAddonPolicies:
+   77          imageBuilder: true # Amazon ECR에 대한 권한 추가
+   78          cloudWatch: true # cloudWatch에 대한 권한 추가
+   79          autoScaler: true # auto scaling에 대한 권한 추가
+   80  cloudWatch:
+   81    clusterLogging:
+   82      enableTypes: ["*"]
+   83  EOF
+   84  ls -trl
+   85  pwd
+   86  cat eks-demo-cluster.yaml 
+   87  ls -al
+   88  cd sample-nodejs-backend/
+   89  ls -a
+   90  ls -al
+   91  cat Dockerfile 
+   92  cd ../sample-react-app/
+   93  ls -al
+   94  cat Dockerfile 
+   95  eksctl create cluster -f eks-demo-cluster.yaml
+   96  kubectl get nodes
+   97  cat ~/.kube/config
+   98  rolearn=$(aws cloud9 describe-environment-memberships --environment-id=$C9_PID | jq -r '.memberships[].userArn')
+   99  echo ${rolearn}
+  100  assumedrolename=$(echo ${rolearn} | awk -F/ '{print $(NF-1)}')
+  101  echo ${assumedrolename}
+  102  rolearn=$(aws iam get-role --role-name ${assumedrolename} --query Role.Arn --output text)
+  103   echo ${rolearn}
+  104  rolearn=$(aws cloud9 describe-environment-memberships --environment-id=$C9_PID | jq -r '.memberships[].userArn')
+  105  echo ${rolearn}
+  106  assumedrolename=$(echo ${rolearn} | awk -F/ '{print $(NF-1)}')
+  107  echo ${assumedrolename}
+  108   echo ${rolearn}
+  109  rolearn=$(aws iam get-role --role-name ${assumedrolename} --query Role.Arn --output text)
+  110  rolearn=$(aws cloud9 describe-environment-memberships --environment-id=$C9_PID | jq -r '.memberships[].userArn')
+  111  echo ${rolearn}
+  112  eksctl create iamidentitymapping --cluster eks-demo --arn ${rolearn} --group system:masters --username admin
+  113  kubectl describe configmap -n kube-system aws-auth
+  114  cd ~/environment
+  115  mkdir -p manifests/alb-ingress-controller && cd manifests/alb-ingress-controller
+  116  eksctl utils associate-iam-oidc-provider --region ${AWS_REGION} --cluster eks-demo --approve
+  117  aws eks describe-cluster --name eks-demo --query "cluster.identity.oidc.issuer" --output text
+  118  aws iam list-open-id-connect-providers | grep 3BD00ED00F3B1A069B3F3A04875FA849
+  119  aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy     --policy-document https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+  120  eksctl create iamserviceaccount     --cluster eks-demo     --namespace kube-system     --name aws-load-balancer-controller     --attach-policy-arn arn:aws:iam::$ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy     --override-existing-serviceaccounts     --approve
+  121  kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.4.1/cert-manager.yaml
+  122  wget https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/v2_2_1_full.yaml
+  123  vi v2_2_1_full.yaml
+  124  cat v2_2_1_full.yaml | grep eks
+  125  cat v2_2_1_full.yaml | grep ServiceAccount
+  126  vi v2_2_1_full.yaml
+  127  kubectl apply -f v2_2_1_full.yaml
+  128  kubectl get deployment -n kube-system aws-load-balancer-controller
+  129  kubectl get sa aws-load-balancer-controller -n kube-system -o yaml
+  130  kubectl logs -n kube-system $(kubectl get po -n kube-system | egrep -o "aws-load-balancer[a-zA-Z0-9-]+")
+  131  ALBPOD=$(kubectl get pod -n kube-system | egrep -o "aws-load-balancer[a-zA-Z0-9-]+")
+  132  kubectl describe pod -n kube-system ${ALBPOD}
+  133  kubectl get pods
+  134  kubectl get pod
+  135  kubectl get po -n kube-system
+  136  cd ~/environment/manifests/
+  137  cat <<EOF> backend-deployment.yaml
+  138  ---
+  139  apiVersion: apps/v1
+  140  kind: Deployment
+  141  metadata:
+  142    name: sample-nodejs-backend
+  143    namespace: default
+  144  spec:
+  145    replicas: 2
+  146    selector:
+  147      matchLabels:
+  148        app: sample-nodejs-backend
+  149    template:
+  150      metadata:
+  151        labels:
+  152          app: sample-nodejs-backend
+  153      spec:
+  154        containers:
+  155          - name: sample-nodejs-backend
+  156            image: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/sample-nodejs-backend:latest
+  157            imagePullPolicy: Always
+  158            ports:
+  159              - containerPort: 8080
+  160  EOF
+  161  cat <<EOF> backend-service.yaml
+  162  ---
+  163  apiVersion: v1
+  164  kind: Service
+  165  metadata:
+  166    name: sample-nodejs-backend
+  167    annotations:
+  168      alb.ingress.kubernetes.io/healthcheck-path: "/"
+  169  spec:
+  170    selector:
+  171      app: sample-nodejs-backend
+  172    type: NodePort
+  173    ports:
+  174      - port: 8080 # 서비스가 생성할 포트  
+  175        targetPort: 8080 # 서비스가 접근할 pod의 포트
+  176        protocol: TCP
+  177  EOF
+  178  cat <<EOF> backend-ingress.yaml
+  179  ---
+  180  apiVersion: networking.k8s.io/v1
+  181  kind: Ingress
+  182  metadata:
+  183      name: "backend-ingress"
+  184      namespace: default
+  185      annotations:
+  186        kubernetes.io/ingress.class: alb
+  187        alb.ingress.kubernetes.io/scheme: internet-facing
+  188        alb.ingress.kubernetes.io/target-type: ip
+  189  spec:
+  190      rules:
+  191      - http:
+  192          paths:
+  193            - path: /
+  194              pathType: Prefix
+  195              backend:
+  196                service:
+  197                  name: "sample-nodejs-backend"
+  198                  port:
+  199                    number: 8080
+  200  EOF
+  201  kubectl apply -f backend-deployment.yaml
+  202  kubectl get pod
+  203  kubectl apply -f backend-service.yaml
+  204  kubectl get pod
+  205  kubectl get sv
+  206  kubectl get svc
+  207  kubectl get ingress
+  208  kubectl apply -f backend-ingress.yaml
+  209  kubectl get ingress
+  210  echo http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/dump/all
+  211  echo http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+  212  cd ~/environment/sample-react-app
+  213  vi nginx.conf
+  214  npm run build
+  215  docker images -a
+  216  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+  217  docker build -t sample-react-app .
+  218  docker tag sample-react-app:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+  219  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+  220  docker images -a
+  221  docker rmi --force 662dde34153d
+  222  docker images -a
+  223  cd ~/environment/manifests/
+  224  cat <<EOF> frontend-deployment.yaml
+  225  ---
+  226  apiVersion: apps/v1
+  227  kind: Deployment
+  228  metadata:
+  229    name: sample-react-app
+  230    namespace: default
+  231  spec:
+  232    replicas: 2
+  233    selector:
+  234      matchLabels:
+  235        app: sample-react-app
+  236    template:
+  237      metadata:
+  238        labels:
+  239          app: sample-react-app
+  240      spec:
+  241        containers:
+  242          - name: sample-react-app
+  243            image: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/sample-react-app:latest
+  244            imagePullPolicy: Always
+  245            ports:
+  246              - containerPort: 80
+  247  EOF
+  248  cat <<EOF> frontend-service.yaml
+  249  ---
+  250  apiVersion: v1
+  251  kind: Service
+  252  metadata:
+  253    name: sample-react-app
+  254    annotations:
+  255      alb.ingress.kubernetes.io/healthcheck-path: "/"
+  256  spec:
+  257    selector:
+  258      app: sample-react-app
+  259    type: NodePort
+  260    ports:
+  261      - port: 80 # 서비스가 생성할 포트  
+  262        targetPort: 80 # 서비스가 접근할 pod의 포트
+  263        protocol: TCP
+  264  EOF
+  265  cat <<EOF> frontend-ingress.yaml
+  266  ---
+  267  apiVersion: networking.k8s.io/v1
+  268  kind: Ingress
+  269  metadata:
+  270      name: "frontend-ingress"
+  271      namespace: default
+  272      annotations:
+  273        kubernetes.io/ingress.class: alb
+  274        alb.ingress.kubernetes.io/scheme: internet-facing
+  275        alb.ingress.kubernetes.io/target-type: ip
+  276  spec:
+  277      rules:
+  278      - http:
+  279          paths:
+  280            - path: /
+  281              pathType: Prefix
+  282              backend:
+  283                service:
+  284                  name: "sample-react-app"
+  285                  port:
+  286                    number: 80
+  287  EOF
+  288  kubectl apply -f frontend-deployment.yaml
+  289  kubectl get pod
+  290  kubectl get ingress
+  291  echo http://$(kubectl get ingress/frontend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/
+  292  kubectl get pod
+  293  cd ~/environment/sample-react-app
+  294  cat nginx.conf
+  295  cd ~/environment/manifests/
+  296  ls -al
+  297  ls -trl
+  298  cat  frontend-deployment.yaml
+  299  cat  frontend-service.yaml
+  300  cat frontend-ingress.yaml
+  301  kubectl get ingress
+  302  echo http://$(kubectl get ingress/frontend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/
+  303  kubectl describe pods
+  304  kubectl apply -f frontend-service.yaml
+  305  kubectl get svc
+  306  kubectl apply -f frontend-ingress.yaml
+  307  kubectl get ingress
+  308  echo http://$(kubectl get ingress/frontend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/
+  309  kubectl get pod
+  310  kubectl apply -f frontend-deployment.yaml
+  311  kubectl get pod
+  312  docker images -a
+  313  kubectl get pod
+  314   kubectl log
+  315  kubectl logs --help
+  316  kubectl logs -p
+  317  kubectl logs -p sample-react-app-7bd96f6ff9-dpz5
+  318  kubectl get pod
+  319  kubectl describe pods
+  320  echo http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+  321  kubectl get pod
+  322  echo http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+  323  echo http://$(kubectl get ingress/frontend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/
+  324  kubectl get nodes -o wide
+  325  kubectl get ns
+  326  kubectl logs -f sample-react-app-7bd96f6ff9-dpz5z
+  327  kubectl describe pod sample-react-app-7bd96f6ff9-dpz5z
+  328  kubectl get pod
+  329  kubectl delete -f frontend-deployment.yaml 
+  330  kubectl get pod
+  331  cd ~/environment/sample-react-app
+  332  vi nginx.conf
+  333  cat nginx.conf 
+  334  npm run build
+  335  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+  336  clear
+  337  docker images -a
+  338  docker build -t sample-react-app .
+  339  docker tag sample-react-app:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+  340  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+  341  docker images -a
+  342  docker rmi --force d29e1dfb80c1
+  343  docker images -a
+  344  cd ~/environment/manifests/
+  345  kubectl get pod
+  346  kubectl apply -f frontend-deployment.yaml
+  347  kubectl get pod
+  348  kubectl apply -f frontend-service.yaml
+  349  kubectl get svc
+  350  kubectl apply -f frontend-ingress.yaml
+  351  kubectl get ingress
+  352  echo http://$(kubectl get ingress/frontend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/
+  353  kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.6/components.yaml
+  354  kubectl get deployment metrics-server -n kube-system
+  355  cd /home/ec2-user/environment/manifests
+  356  echo $ACCOUNT_ID
+  357  cat backend-deployment.yaml 
+  358  cat <<EOF> backend-deployment.yaml
+  359  ---
+  360  apiVersion: apps/v1
+  361  kind: Deployment
+  362  metadata:
+  363    name: sample-nodejs-backend
+  364    namespace: default
+  365  spec:
+  366    replicas: 1
+  367    selector:
+  368      matchLabels:
+  369        app: sample-nodejs-backend
+  370    template:
+  371      metadata:
+  372        labels:
+  373          app: sample-nodejs-backend
+  374      spec:
+  375        containers:
+  376          - name: sample-nodejs-backend
+  377            image: $ACCOUNT_ID.dkr.ecr.ap-northeast-3.amazonaws.com/sample-nodejs-backend:latest
+  378            imagePullPolicy: Always
+  379            ports:
+  380              - containerPort: 8080
+  381            resources:
+  382              requests:
+  383                cpu: 250m
+  384              limits:
+  385                cpu: 500m
+  386  EOF
+  387  cat backend-deployment.yaml
+  388  kubectl apply -f backend-deployment.yaml
+  389  cat <<EOF> backend-hpa.yaml
+  390  ---
+  391  apiVersion: autoscaling/v1
+  392  kind: HorizontalPodAutoscaler
+  393  metadata:
+  394    name: sample-nodejs-backend-hpa
+  395    namespace: default
+  396  spec:
+  397    scaleTargetRef:
+  398      apiVersion: apps/v1
+  399      kind: Deployment
+  400      name: sample-nodejs-backend
+  401    minReplicas: 1
+  402    maxReplicas: 3
+  403    targetCPUUtilizationPercentage: 30
+  404  EOF
+  405  kubectl apply -f backend-hpa.yaml
+  406  kubectl get hpa
+  407  kubectl get hpa -w
+  408  kubectl get pod
+  409  clear
+  410  kubectl get pod
+  411  ab -c 200 -n 1000 -t 120 http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/
+  412  kubectl get pod
+  413  ab -c 200 -n 1000 -t 120 http://k8s-default-backendi-6566bc7d31-1758728739.ap-northeast-3.elb.amazonaws.com
+  414  ab -c 200 -n 1000 -t 120 http://k8s-default-backendi-6566bc7d31-1758728739.ap-northeast-3.elb.amazonaws.com/
+  415  wget https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
+  416  kubectl get pod
+  417  i cluster-autoscaler-autodiscover.yaml
+  418  vi cluster-autoscaler-autodiscover.yaml
+  419  wget https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
+  420  vi cluster-autoscaler-autodiscover.yaml
+  421  cat cluster-autoscaler-autodiscover.yaml
+  422  cat cluster-autoscaler-autodiscover.yaml | grep eks
+  423  kubectl apply -f cluster-autoscaler-autodiscover.yaml
+  424  kubectl get hpa -w
+  425  kubectl get nods
+  426  kubectl get nodes
+  427  kubectl create deployment autoscaler-demo --image=nginx
+  428  kubectl scale deployment autoscaler-demo --replicas=12
+  429  kubectl get nodes
+  430  kubectl get pod
+  431  kubectl get deployment autoscaler-demo --watch
+  432  kubectl get nodes
+  433  kubectl delete deployment autoscaler-demo
+  434  kubectl get pods
+  435  kubectl get node
+  436  kubectl get pos
+  437  kubectl get pod
+  438  kubectl get pod
+  439  curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+  440  helm version --short
+  441  helm repo add stable https://charts.helm.sh/stable
+  442  helm search repo stable
+  443  helm completion bash >> ~/.bash_completion
+  444  . /etc/profile.d/bash_completion.sh
+  445  . ~/.bash_completion
+  446  source <(helm completion bash)
+  447  helm install kube-ops-view stable/kube-ops-view --set service.type=LoadBalancer --set rbac.create=True
+  448  helm list
+  449  kubectl get svc kube-ops-view
+  450  cd ~
+  451  ls -al
+  452  cd environment/
+  453  ls -al
+  454  vi eks-demo-cluster.yaml
+  455  ls -al
+  456  vi eks-demo-cluster.yaml
+  457  kubectl get nodes
+  458  eksctl create nodegroup --config-file eks-demo-cluster.yaml
+  459  cd ~/environment/manifests
+  460  wget -O elasticsearch.yaml https://github.com/sghaha/amazon-eks-hands-on/blob/main/file/elasticsearch.yaml?raw=true
+  461  kubectl apply -f elasticsearch.yaml
+  462  kubectl patch svc elasticsearch-svc -p '{"spec": {"type": "LoadBalancer"}}'
+  463  kubectl get svc
+  464  wget -O kibana.yaml https://github.com/sghaha/amazon-eks-hands-on/blob/main/file/kibana.yaml?raw=true
+  465  kubectl apply -f kibana.yaml
+  466  kubectl patch svc kibana-svc -p '{"spec": {"type": "LoadBalancer"}}'
+  467  kubectl get svc
+  468  wget -O fluent-bit.yaml https://github.com/sghaha/amazon-eks-hands-on/blob/main/file/fluent-bit.yaml?raw=true
+  469  ls -trl
+  470  vi fluent-bit.yaml
+  471  kubectl create namespace logging
+  472  kubectl apply -f fluent-bit.yaml
+  473  kubectl get pod -n logging
+  474  kubectl get svc
+  475  kubectl get pod -n logging
+  476  cd ~/environment/manifests
+  477  kubectl get nodes -w
+  478  ls -al
+  479  cd ../
+  480  ls -al
+  481  cd ../
+  482  ls -al
+  483  cd -
+  484  ls -al
+  485  ls -al sample-nodejs-backend/
+  486  ls -al sample-react-app/
+  487  ls -al /home/ec2-user/environment/manifests/alb-ingress-controller
+  488  pwd
+  489  cd manifests/
+  490  ls -al
+  491  kubectl delete -f backend-deployment.yaml
+  492  kubectl delete -f backend-hpa.yaml
+  493  kubectl delete -f backend-ingress.yaml
+  494  kubectl delete -f backend-service.yaml
+  495  kubectl delete -f cluster-autoscaler-autodiscover.yaml
+  496  kubectl delete -f elasticsearch.yaml
+  497  kubectl delete -f fluent-bit.yaml
+  498  kubectl delete -f frontend-deployment.yaml
+  499  kubectl delete -f frontend-ingress.yaml
+  500  kubectl delete -f frontend-service.yaml
+  501  kubectl delete -f kibana.yaml
+  502  kubectl delete -f alb-ingress-controller/v2_2_1_full.yaml
+  503  eksctl delete cluster --name=eks-demo
+  504  aws ecr describe-repositories
+  505  aws ecr delete-repository --repository-name sample-nodejs-backend
+  506  aws ecr delete-repository --repository-name sample-react-app
+  507  aws ecr delete-repository --repository-name sample-nodejs-backend
+  508  aws ecr describe-repositories
+  509  aws ecr delete-repository --repository-name sample-react-app
+  510  aws ecr describe-repositories
+  511  aws logs describe-log-groups --query 'logGroups[*].logGroupName' --output table | awk '{print $2}' | grep ^/aws/containerinsights/eks-demo | while read x; do  echo "deleting $x" ; aws logs delete-log-group --log-group-name $x; done
+  512  aws logs describe-log-groups --query 'logGroups[*].logGroupName' --output table | awk '{print $2}' | grep ^/aws/eks/eks-demo | while read x; do  echo "deleting $x" ; aws logs delete-log-group --log-group-name $x; done
+  513  aws sts get-caller-identity --query Arn | grep HandsOn-Admin
+  514  aws --version
+  515  kubectl version --client=true --short=true
+  516  eksctl version
+  517  aws configure get default.region
+  518  cat ~/.bash_profile
+  519  cd ~/environment/
+  520  git clone https://github.com/sghaha/sample-nodejs-backend.git
+  521  cd sample-nodejs-backend
+  522  cd ../
+  523  ls -al
+  524  ls -al sample-react-app/
+  525  ls -al
+  526  mv sample-nodejs-backend sample-nodejs-backend.1
+  527  ls -al
+  528  cd ~/environment/
+  529  git clone https://github.com/sghaha/sample-nodejs-backend.git
+  530  ls -al
+  531  ls -al sample-nodejs-backend
+  532  ls -al sample-nodejs-backend.1
+  533  cd sample-nodejs-backend
+  534  npm install
+  535  aws ecr create-repository --repository-name sample-nodejs-backend --image-scanning-configuration scanOnPush=true --region ${AWS_REGION}
+  536  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+  537  cd ~/environment/sample-nodejs-backend
+  538  docker build -t sample-nodejs-backend .
+  539  docker tag sample-nodejs-backend:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-nodejs-backend:latest
+  540  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-nodejs-backend:latest
+  541  docker images -a
+  542  docker rmi --force 345a3c0c8f1b
+  543  cd ~/environment/
+  544  ls -al
+  545  mv sample-react-app sample-react-app.1
+  546  ls -al
+  547  git clone https://github.com/sghaha/sample-react-app.git
+  548  cd sample-react-app
+  549  npm install
+  550  mkdir build
+  551  ls -al
+  552  aws ecr create-repository --repository-name sample-react-app --image-scanning-configuration scanOnPush=true --region ${AWS_REGION}
+  553  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+  554  cd ~/environment/sample-react-app
+  555  docker build -t sample-react-app .
+  556  docker tag sample-react-app:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+  557  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+  558  docker images 0a
+  559  docker images -a
+  560  docker rmi --force 95d5f8ca298e
+  561  cd ~/environment
+  562  ls -al
+  563  mkdir manifests
+  564  mv manifests manifests.1
+  565  ls -al
+  566  df -Ph
+  567  du -sk *
+  568  rm -rf sample-react-app.1
+  569  rm -rf sample-nodejs-backend.1
+  570  ls -al
+  571  df -Ph
+  572  rm -rf  manifests.1
+  573  ls -al
+  574  mkdir manifests
+  575  cd manifests
+  576  cat << EOF > eks-demo-cluster.yaml
+  577  ---
+  578  apiVersion: eksctl.io/v1alpha5
+  579  kind: ClusterConfig
+  580  metadata:
+  581    name: eks-demo # 생성할 EKS 클러스터명
+  582    region: ${AWS_REGION} # 클러스터를 생성할 리전
+  583    version: "1.21"
+  584  vpc:
+  585    cidr: "192.168.0.0/16" # 클러스터에서 사용할 VPC의 CIDR
+  586  managedNodeGroups:
+  587    - name: node-group # 클러스터의 노드 그룹명
+  588      instanceType: t3.small # 클러스터 워커 노드의 인스턴스 타입
+  589      desiredCapacity: 2 # 클러스터 워커 노드의 갯수
+  590      volumeSize: 10  # 클러스터 워커 노드의 EBS 용량 (단위: GiB)
+  591      ssh:
+  592        enableSsm: true
+  593      iam:
+  594        withAddonPolicies:
+  595          imageBuilder: true # Amazon ECR에 대한 권한 추가
+  596          cloudWatch: true # cloudWatch에 대한 권한 추가
+  597          autoScaler: true # auto scaling에 대한 권한 추가
+  598  cloudWatch:
+  599    clusterLogging:
+  600      enableTypes: ["*"]
+  601  EOF
+  602  eksctl create cluster -f eks-demo-cluster.yaml
+  603  kubectl get nodes 
+  604  cat ~/.kube/config
+  605  rolearn=$(aws cloud9 describe-environment-memberships --environment-id=$C9_PID | jq -r '.memberships[].userArn')
+  606  echo ${rolearn}
+  607  eksctl create iamidentitymapping --cluster eks-demo --arn ${rolearn} --group system:masters --username admin
+  608  kubectl describe configmap -n kube-system aws-auth
+  609  cd ~/environment
+  610  mkdir -p manifests/alb-ingress-controller && cd manifests/alb-ingress-controller
+  611  eksctl utils associate-iam-oidc-provider --region ${AWS_REGION} --cluster eks-demo --approve
+  612  aws eks describe-cluster --name eks-demo --query "cluster.identity.oidc.issuer" --output text
+  613  aws iam list-open-id-connect-providers | grep 42D46EFD3C560C30C622E703D569B350
+  614  aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy     --policy-document https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+  615  eksctl create iamserviceaccount     --cluster eks-demo     --namespace kube-system     --name aws-load-balancer-controller     --attach-policy-arn arn:aws:iam::$ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy     --override-existing-serviceaccounts     --approve
+  616  kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.4.1/cert-manager.yaml
+  617  wget https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/v2_2_1_full.yaml
+  618  ls -al
+  619  vi v2_2_1_full.yaml
+  620  cat v2_2_1_full.yaml | grep eks
+  621  cat v2_2_1_full.yaml | grep ServiceAccount
+  622  kubectl apply -f  v2_2_1_full.yaml 
+  623  kubectl get deployment -n kube-system aws-load-balancer-controller
+  624  kubectl get sa aws-load-balancer-controller -n kube-system -o yaml
+  625  kubectl logs -n kube-system $(kubectl get po -n kube-system | egrep -o "aws-load-balancer[a-zA-Z0-9-]+")
+  626  ALBPOD=$(kubectl get pod -n kube-system | egrep -o "aws-load-balancer[a-zA-Z0-9-]+")
+  627  kubectl describe pod -n kube-system ${ALBPOD}
+  628  cd ~/environment/manifests/
+  629  cat <<EOF> backend-deployment.yaml
+  630  ---
+  631  apiVersion: apps/v1
+  632  kind: Deployment
+  633  metadata:
+  634    name: sample-nodejs-backend
+  635    namespace: default
+  636  spec:
+  637    replicas: 2
+  638    selector:
+  639      matchLabels:
+  640        app: sample-nodejs-backend
+  641    template:
+  642      metadata:
+  643        labels:
+  644          app: sample-nodejs-backend
+  645      spec:
+  646        containers:
+  647          - name: sample-nodejs-backend
+  648            image: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/sample-nodejs-backend:latest
+  649            imagePullPolicy: Always
+  650            ports:
+  651              - containerPort: 8080
+  652  EOF
+  653  cat <<EOF> backend-service.yaml
+  654  ---
+  655  apiVersion: v1
+  656  kind: Service
+  657  metadata:
+  658    name: sample-nodejs-backend
+  659    annotations:
+  660      alb.ingress.kubernetes.io/healthcheck-path: "/"
+  661  spec:
+  662    selector:
+  663      app: sample-nodejs-backend
+  664    type: NodePort
+  665    ports:
+  666      - port: 8080 # 서비스가 생성할 포트  
+  667        targetPort: 8080 # 서비스가 접근할 pod의 포트
+  668        protocol: TCP
+  669  EOF
+  670  cat <<EOF> backend-ingress.yaml
+  671  ---
+  672  apiVersion: networking.k8s.io/v1
+  673  kind: Ingress
+  674  metadata:
+  675      name: "backend-ingress"
+  676      namespace: default
+  677      annotations:
+  678        kubernetes.io/ingress.class: alb
+  679        alb.ingress.kubernetes.io/scheme: internet-facing
+  680        alb.ingress.kubernetes.io/target-type: ip
+  681  spec:
+  682      rules:
+  683      - http:
+  684          paths:
+  685            - path: /
+  686              pathType: Prefix
+  687              backend:
+  688                service:
+  689                  name: "sample-nodejs-backend"
+  690                  port:
+  691                    number: 8080
+  692  EOF
+  693  ls -al
+  694  kubectl apply -f backend-deployment.yaml
+  695  kubectl get pod
+  696  kubectl apply -f backend-service.yaml
+  697  kubectl get svc
+  698  kubectl get ingress
+  699  kubectl apply -f backend-ingress.yaml
+  700  kubectl get ingress
+  701  echo http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/dump/all
+  702  echo http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+  703  cd ~/environment/sample-react-app
+  704  vi nginx.conf
+  705  npm run build
+  706  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+  707  docker build -t sample-react-app .
+  708  docker tag sample-react-app:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+  709  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+  710  docker images -a
+  711  docker rmi --force 841962f269bc
+  712  docker images -a
+  713  cd ~/environment/manifests/
+  714  kubectl get pod
+  715  cat <<EOF> frontend-deployment.yaml
+  716  ---
+  717  apiVersion: apps/v1
+  718  kind: Deployment
+  719  metadata:
+  720    name: sample-react-app
+  721    namespace: default
+  722  spec:
+  723    replicas: 2
+  724    selector:
+  725      matchLabels:
+  726        app: sample-react-app
+  727    template:
+  728      metadata:
+  729        labels:
+  730          app: sample-react-app
+  731      spec:
+  732        containers:
+  733          - name: sample-react-app
+  734            image: $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/sample-react-app:latest
+  735            imagePullPolicy: Always
+  736            ports:
+  737              - containerPort: 80
+  738  EOF
+  739  cat <<EOF> frontend-service.yaml
+  740  ---
+  741  apiVersion: v1
+  742  kind: Service
+  743  metadata:
+  744    name: sample-react-app
+  745    annotations:
+  746      alb.ingress.kubernetes.io/healthcheck-path: "/"
+  747  spec:
+  748    selector:
+  749      app: sample-react-app
+  750    type: NodePort
+  751    ports:
+  752      - port: 80 # 서비스가 생성할 포트  
+  753        targetPort: 80 # 서비스가 접근할 pod의 포트
+  754        protocol: TCP
+  755  EOF
+  756  cat <<EOF> frontend-ingress.yaml
+  757  ---
+  758  apiVersion: networking.k8s.io/v1
+  759  kind: Ingress
+  760  metadata:
+  761      name: "frontend-ingress"
+  762      namespace: default
+  763      annotations:
+  764        kubernetes.io/ingress.class: alb
+  765        alb.ingress.kubernetes.io/scheme: internet-facing
+  766        alb.ingress.kubernetes.io/target-type: ip
+  767  spec:
+  768      rules:
+  769      - http:
+  770          paths:
+  771            - path: /
+  772              pathType: Prefix
+  773              backend:
+  774                service:
+  775                  name: "sample-react-app"
+  776                  port:
+  777                    number: 80
+  778  EOF
+  779  kubectl apply -f frontend-deployment.yaml
+  780  kubectl get pod
+  781  kubectl apply -f frontend-service.yaml
+  782  kubectl get svc
+  783  kubectl apply -f frontend-ingress.yaml
+  784  kubectl get ingress
+  785  echo http://$(kubectl get ingress/frontend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/
+  786  cd ~/environment/
+  787  ls -al
+  788  git clone https://github.com/sghaha/sample-react-app.git
+  789  git clone https://github.com/bomi25kim/myapp-repo.git
+  790  ls -al
+  791  ls -al  sample-react-app
+  792  ls -al myapp-repo/
+  793  cd ~/environment/myapp-repo
+  794  ls -al
+  795  npm install
+  796  npm run build
+  797  ls -al
+  798  cat nginx.conf 
+  799  aws iam create-user --user-name github-action-bomi25kim
+  800  cd ~/environment
+  801  cat <<EOF> ecr-policy.json
+  802  {
+  803      "Version": "2012-10-17",
+  804      "Statement": [
+  805          {
+  806              "Sid": "AllowPush",
+  807              "Effect": "Allow",
+  808              "Action": [
+  809                  "ecr:GetDownloadUrlForLayer",
+  810                  "ecr:BatchGetImage",
+  811                  "ecr:BatchCheckLayerAvailability",
+  812                  "ecr:PutImage",
+  813                  "ecr:InitiateLayerUpload",
+  814                  "ecr:UploadLayerPart",
+  815                  "ecr:CompleteLayerUpload"
+  816              ],
+  817              "Resource": "arn:aws:ecr:${AWS_REGION}:${ACCOUNT_ID}:repository/myapp-repo"
+  818          },
+  819          {
+  820              "Sid": "GetAuthorizationToken",
+  821              "Effect": "Allow",
+  822              "Action": [
+  823                  "ecr:GetAuthorizationToken"
+  824              ],
+  825              "Resource": "*"
+  826          }
+  827      ]
+  828  }
+  829  EOF
+  830  aws iam create-policy --policy-name ecr-policy-bomi25kim --policy-document file://ecr-policy.json
+  831  aws iam attach-user-policy --user-name github-action-bomi25kim --policy-arn arn:aws:iam::${ACCOUNT_ID}:policy/ecr-policy-bomi25kim
+  832  aws iam create-access-key --user-name github-action-bomi25kim
+  833  cd ~/environment/myapp-repo
+  834  mkdir -p ./.github/workflows
+  835  cd ~/environment/myapp-repo/.github/workflows
+  836  wget -O build.yaml https://github.com/sghaha/amazon-eks-hands-on/blob/main/file/build.yaml?raw=true
+  837  ls -al
+  838  vi build.yaml 
+  839  ls -al
+  840  cd myapp-repo/
+  841  ls -al
+  842  cat build.yaml 
+  843  cd ~/environment
+  844  ls -al 
+  845  git clone https://github.com/bomi25kim/manifest-repo.git
+  846  ls -al
+  847  mkdir -p ./manifest-repo/base
+  848  mkdir -p ./manifest-repo/overlays/dev
+  849  cd manifest-repo/base
+  850  cd ~/environment
+  851  cd manifest-repo/base
+  852  ls -al
+  853  cat <<EOF> myapp-deployment.yaml
+  854  ---
+  855  apiVersion: apps/v1
+  856  kind: Deployment
+  857  metadata:
+  858    name: myapp
+  859    namespace: default
+  860  spec:
+  861    replicas: 2
+  862    selector:
+  863      matchLabels:
+  864        app: myapp
+  865    template:
+  866      metadata:
+  867        labels:
+  868          app: myapp
+  869      spec:
+  870        containers:
+  871          - name: myapp
+  872            image: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/myapp-repo:latest
+  873            imagePullPolicy: Always
+  874            ports:
+  875              - containerPort: 80
+  876  EOF
+  877  cat <<EOF> myapp-service.yaml
+  878  ---
+  879  apiVersion: v1
+  880  kind: Service
+  881  metadata:
+  882    name: myapp
+  883    annotations:
+  884      alb.ingress.kubernetes.io/healthcheck-path: "/"
+  885  spec:
+  886    selector:
+  887      app: myapp
+  888    type: NodePort
+  889    ports:
+  890      - protocol: TCP
+  891        port: 80
+  892        targetPort: 80
+  893  EOF
+  894  cat <<EOF> ingress.yaml
+  895  ---
+  896  apiVersion: networking.k8s.io/v1
+  897  kind: Ingress
+  898  metadata:
+  899    name: "myapp-ingress"
+  900    namespace: default
+  901    annotations:
+  902      kubernetes.io/ingress.class: alb
+  903      alb.ingress.kubernetes.io/scheme: internet-facing
+  904      alb.ingress.kubernetes.io/target-type: ip
+  905  spec:
+  906    rules:
+  907      - http:
+  908          paths:
+  909            - path: /
+  910              pathType: Prefix
+  911              backend:
+  912                service:
+  913                  name: "myapp"
+  914                  port:
+  915                    number: 80
+  916  EOF
+  917  ls -al
+  918  cat <<EOF> kustomization.yaml
+  919  apiVersion: kustomize.config.k8s.io/v1beta1
+  920  kind: Kustomization
+  921  resources:
+  922    - myapp-deployment.yaml
+  923    - myapp-service.yaml
+  924  EOF
+  925  cd ~/environment/manifest-repo/overlays/dev
+  926  cat <<EOF> myapp-service-patch.yaml
+  927  apiVersion: v1
+  928  kind: Service
+  929  metadata:
+  930    name: myapp
+  931    annotations:
+  932      alb.ingress.kubernetes.io/healthcheck-path: "/"
+  933    labels:
+  934      env: dev
+  935  spec:
+  936    selector:
+  937      app: myapp
+  938  EOF
+  939  cat <<EOF> myapp-deployment-patch.yaml
+  940  apiVersion: apps/v1
+  941  kind: Deployment
+  942  metadata:
+  943    name: myapp
+  944    namespace: default
+  945    labels:
+  946      env: dev
+  947  spec:
+  948    selector:
+  949      matchLabels:
+  950        app: myapp
+  951    template:
+  952      metadata:
+  953        labels:
+  954          app: myapp
+  955  EOF
+  956  cat <<EOF> kustomization.yaml
+  957  apiVersion: kustomize.config.k8s.io/v1beta1
+  958  kind: Kustomization
+  959  images:
+  960  - name: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/myapp-repo
+  961    newName: ${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/myapp-repo
+  962    newTag: aa68ef2e
+  963  resources:
+  964  - ../../base
+  965  patchesStrategicMerge:
+  966  - myapp-deployment-patch.yaml
+  967  - myapp-service-patch.yaml
+  968  EOF
+  969  ls -al
+  970  cd ~/environment/myapp-repo/.github/workflows
+  971  ls -al
+  972  vi build.yaml 
+  973  ls  -al
+  974  cd manifest-repo/base
+  975  cd ~/environment
+  976  cd manifest-repo/base
+  977  ls -al
+  978  cd ~/environment/manifest-repo/overlays/dev
+  979  ls -al
+  980  cat kustomization.yaml
+  981  kubectl create namespace argocd
+  982  cd ~/environment
+  983  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+  984  VERSION=$(curl --silent "https://api.github.com/repos/argoproj/argo-cd/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+  985  sudo curl --silent --location -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/$VERSION/argocd-linux-amd64
+  986  sudo chmod +x /usr/local/bin/argocd
+  987  kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+  988  export ARGOCD_SERVER=`kubectl get svc argocd-server -n argocd -o json | jq --raw-output .status.loadBalancer.ingress[0].hostname`
+  989  echo $ARGOCD_SERVER
+  990  ARGO_PWD=`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d`
+  991  echo $ARGO_PWD
+  992  kubectl get pod
+  993  kubectl get nodes
+  994  kubectl get ingress
+  995  kubectl get nodes
+  996  kubectl get pod
+  997  kubectl get pod -o wide
+  998  kubectl get node
+  999  kubectl get pod
+ 1000  kubectl get node
+ 1001  cd ~/environment/
+ 1002  kubectl get pod
+ 1003  kubectl get pod -w
+ 1004  wget https://raw.githubusercontent.com/kubernetes/autoscaler/master/cluster-autoscaler/cloudprovider/aws/examples/cluster-autoscaler-autodiscover.yaml
+ 1005  ls -al
+ 1006  cat cluster-autoscaler-autodiscover.yaml
+ 1007  cat cluster-autoscaler-autodiscover.yaml | grep eks
+ 1008  vi cluster-autoscaler-autodiscover.yaml
+ 1009  ls -al
+ 1010  cluster-autoscaler-autodiscover.yaml | grep eks
+ 1011  cat cluster-autoscaler-autodiscover.yaml | grep eks
+ 1012  cat cluster-autoscaler-autodiscover.yaml.1 |  grep eks
+ 1013  ls -al
+ 1014  vi cluster-autoscaler-autodiscover.yaml.1
+ 1015  kubectl apply -f cluster-autoscaler-autodiscover.yaml
+ 1016  kubectl get nodes -w
+ 1017  kubectl get pod
+ 1018  kubectl get nodes -w
+ 1019  kubectl get nodes
+ 1020  kubectl get pod -w
+ 1021  kubectl get pod 
+ 1022  cd /home/ec2-user/environment/manifests
+ 1023  ls -al
+ 1024  cat <<EOF> myapp-ingress.yaml
+ 1025  ---
+ 1026  apiVersion: networking.k8s.io/v1
+ 1027  kind: Ingress
+ 1028  metadata:
+ 1029      name: "myapp-ingress"
+ 1030      namespace: default
+ 1031      annotations:
+ 1032        kubernetes.io/ingress.class: alb
+ 1033        alb.ingress.kubernetes.io/scheme: internet-facing
+ 1034        alb.ingress.kubernetes.io/target-type: ip
+ 1035  spec:
+ 1036      rules:
+ 1037      - http:
+ 1038          paths:
+ 1039            - path: /
+ 1040              pathType: Prefix
+ 1041              backend:
+ 1042                service:
+ 1043                  name: "myapp"
+ 1044                  port:
+ 1045                    number: 80
+ 1046  EOF
+ 1047  kubectl get ingress
+ 1048  kubectl apply -f myapp-ingress.yaml 
+ 1049  kubectl get ingress
+ 1050  kubectl get pnode
+ 1051  kubectl get node
+ 1052  cd ../
+ 1053  ls -al
+ 1054  cd myapp-repo/
+ 1055  ls -al
+ 1056  cd src
+ 1057  ls -al
+ 1058  cd layout/
+ 1059  ls -al
+ 1060  vi Layout.js 
+ 1061  kubectl get pod 
+ 1062  cd ~
+ 1063  cd -
+ 1064  cd ~/environment/manifests
+ 1065  ls -al
+ 1066  kubectl delete -f backend-deployment.yaml
+ 1067  kubectl delete -f backend-hpa.yaml
+ 1068  kubectl delete -f backend-ingress.yaml
+ 1069  kubectl delete -f backend-service.yaml
+ 1070  kubectl delete -f cluster-autoscaler-autodiscover.yaml
+ 1071  kubectl delete -f elasticsearch.yaml
+ 1072  kubectl delete -f fluent-bit.yaml
+ 1073  kubectl delete -f frontend-deployment.yaml
+ 1074  kubectl delete -f frontend-ingress.yaml
+ 1075  kubectl delete -f frontend-service.yaml
+ 1076  kubectl delete -f kibana.yaml
+ 1077  ㅣㄴ -미
+ 1078  ls -al
+ 1079  cd manifest
+ 1080  cd manifests
+ 1081  ls -al
+ 1082  kubectl delete -f frontend-deployment.yaml
+ 1083  kubectl delete -f frontend-ingress.yaml
+ 1084  kubectl delete -f frontend-service.yaml
+ 1085  kubectl get node
+ 1086  kubectl get pod
+ 1087  kubectl get svc
+ 1088  kubectl delete -f frontend-ingress.yaml 
+ 1089  kubectl get ingress
+ 1090  kubctl get pod
+ 1091  kubectl get pod
+ 1092  kubectl get svc
+ 1093  kubectl get ingress
+ 1094  kubectl get svc
+ 1095  kubectl get ingress
+ 1096  ls -al
+ 1097  kubectl delete -f myapp-ingress.yaml
+ 1098  kubectl get pod
+ 1099  kubectl get svc
+ 1100  kubectl get ingress
+ 1101  kubectl get pod
+ 1102  kubectl get namespace
+ 1103  kubectl get pod -n kube-system
+ 1104  kubectl get pod
+ 1105  cd manifests/
+ 1106  ls -al
+ 1107  kubectl get ingress
+ 1108  cd manifest-repo/base
+ 1109  cd ~/environment
+ 1110  cd manifest-repo/base
+ 1111  ls -al
+ 1112  kubctl get pod
+ 1113  aws ecr describe-repositories
+ 1114  kubectl delete -f alb-ingress-controller/v2_2_1_full.yaml
+ 1115  kubectl delete -f myapp-ingress.yaml
+ 1116  kubectl get pod
+ 1117  kubectl get node
+ 1118  kubectl get svc
+ 1119  kubectl get ingress
+ 1120  kubectl get pod
+ 1121  kubectl get svc
+ 1122  kubectl get ingress
+ 1123  kubectl delete myapp-ingress
+ 1124  kubectl delete ingress myapp-ingress
+ 1125  kubectl get pod
+ 1126  kubectl get ingress
+ 1127  clear
+ 1128  date
+ 1129  eksctl delete cluster --name=eks-demo
+ 1130  kubectl get ingress
+ 1131  aws ecr describe-repositories
+ 1132  aws ecr delete-repository --repository-name sample-nodejs-backend
+ 1133  aws ecr delete-repository --repository-name sample-react-app
+ 1134  aws ecr delete-repository --repository-name myapp-repo
+ 1135  aws logs describe-log-groups --query 'logGroups[*].logGroupName' --output table | awk '{print $2}' | grep ^/aws/containerinsights/eks-demo | while read x; do  echo "deleting $x" ; aws logs delete-log-group --log-group-name $x; done
+ 1136  aws logs describe-log-groups --query 'logGroups[*].logGroupName' --output table | awk '{print $2}' | grep ^/aws/eks/eks-demo | while read x; do  echo "deleting $x" ; aws logs delete-log-group --log-group-name $x; done
+ 1137  cd sample-nodejs-backend
+ 1138  ls -al
+ 1139  aws ecr create-repository --repository-name sample-nodejs-backend --image-scanning-configuration scanOnPush=true --region ${AWS_REGION}
+ 1140  aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com
+ 1141  cd ~/environment/sample-nodejs-backend
+ 1142  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+ 1143  cat /home/ec2-user/.docker/config.json
+ 1144  aws ecr describe-repositories
+ 1145  aws ecr delete-repository --repository-name sample-nodejs-backend
+ 1146  cat /home/ec2-user/.docker/config.json
+ 1147  ls -al /home/ec2-user/.docker/config.json
+ 1148  date
+ 1149  cd /home/ec2-user/.docker/
+ 1150  ls -al
+ 1151  mv config.json config.json.1
+ 1152  ls -al
+ 1153  cd ~/environment/sample-nodejs-backend
+ 1154  docker tag sample-nodejs-backend:latest $ACCOUNT_ID.dkr.ecr.ap-northeast-2.amazonaws.com/sample-nodejs-backend:latest
+ 1155  aws ecr create-repository --repository-name sample-nodejs-backend --image-scanning-configuration scanOnPush=true --region ${AWS_REGION}
+ 1156  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+ 1157  ls -al  /home/ec2-user/.docker/
+ 1158  cat  /home/ec2-user/.docker/config.json
+ 1159  docker build -t sample-nodejs-backend .
+ 1160  docker tag sample-nodejs-backend:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-nodejs-backend:latest
+ 1161  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-nodejs-backend:latest
+ 1162  docker images -a
+ 1163  docker  rmi --force 3fc585da13ec
+ 1164  docker images -a
+ 1165  cd ~/environment/
+ 1166  cd sample-react-app
+ 1167  ls -al
+ 1168  aws ecr create-repository --repository-name sample-react-app --image-scanning-configuration scanOnPush=true --region ${AWS_REGION}
+ 1169  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+ 1170  docker build -t sample-react-app .
+ 1171  docker tag sample-react-app:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+ 1172  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+ 1173  docker iamges -a
+ 1174  docker images -a
+ 1175  docker rmi --force 2e80cc84e564
+ 1176  docker images -a
+ 1177  cd ~/environment
+ 1178  cd manifest
+ 1179  cd manifests
+ 1180  ls -al
+ 1181  cat eks-demo-cluster.yaml
+ 1182  eksctl create cluster -f eks-demo-cluster.yaml
+ 1183  vi eks-demo-cluster.yaml 
+ 1184  eksctl create cluster -f eks-demo-cluster.yaml
+ 1185  ls -al
+ 1186  vi eks-demo-cluster.yaml 
+ 1187  eksctl create cluster -f eks-demo-cluster.yaml
+ 1188  kubectl get nodes 
+ 1189  eksctl delete cluster --name=eks-demo2
+ 1190  kubectl get nodes 
+ 1191  cat ~/.kube/config
+ 1192  rolearn=$(aws cloud9 describe-environment-memberships --environment-id=$C9_PID | jq -r '.memberships[].userArn')
+ 1193  echo ${rolearn}
+ 1194  eksctl create iamidentitymapping --cluster eks-demo --arn ${rolearn} --group system:masters --username admin
+ 1195  kubectl describe configmap -n kube-system aws-auth
+ 1196  cd ~/environment
+ 1197  cd manifests/alb-ingress-controller
+ 1198  ll
+ 1199  aws eks describe-cluster --name eks-demo --query "cluster.identity.oidc.issuer" --output text
+ 1200  eksctl utils associate-iam-oidc-provider --region ${AWS_REGION} --cluster eks-demo --approve
+ 1201  aws eks describe-cluster --name eks-demo --query "cluster.identity.oidc.issuer" --output text
+ 1202  aws iam list-open-id-connect-providers | grep 04A417AEF90EF8B89314000A181270C2
+ 1203  aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy     --policy-document https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+ 1204  eksctl create iamserviceaccount     --cluster eks-demo     --namespace kube-system     --name aws-load-balancer-controller     --attach-policy-arn arn:aws:iam::$ACCOUNT_ID:policy/AWSLoadBalancerControllerIAMPolicy     --override-existing-serviceaccounts     --approve
+ 1205  kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.4.1/cert-manager.yaml
+ 1206  ls -al
+ 1207  mv v2_2_1_full.yaml v2_2_1_full.yaml.bak
+ 1208  wget https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.2.1/docs/install/v2_2_1_full.yaml
+ 1209  ls -al
+ 1210  diff  v2_2_1_full.yaml  v2_2_1_full.yaml.bak
+ 1211  ls -al
+ 1212   rm  v2_2_1_full.yaml
+ 1213  l s-al
+ 1214  ls -al
+ 1215  mv  v2_2_1_full.yaml.bak  v2_2_1_full.yaml
+ 1216  ls -al
+ 1217  kubectl get deployment -n kube-system aws-load-balancer-controller
+ 1218  kubectl apply -f v2_2_1_full.yaml
+ 1219  kubectl get deployment -n kube-system aws-load-balancer-controller
+ 1220  kubectl get sa aws-load-balancer-controller -n kube-system -o yaml
+ 1221  kubectl logs -n kube-system $(kubectl get po -n kube-system | egrep -o "aws-load-balancer[a-zA-Z0-9-]+")
+ 1222  ALBPOD=$(kubectl get pod -n kube-system | egrep -o "aws-load-balancer[a-zA-Z0-9-]+")
+ 1223  kubectl describe pod -n kube-system ${ALBPOD}
+ 1224  docker ps
+ 1225  cd ../
+ 1226  ls -al
+ 1227  cd ../
+ 1228  ls -al
+ 1229  cd sample-nodejs-backend/
+ 1230  ls -al
+ 1231  cat Dockerfile 
+ 1232  kubectl get pod
+ 1233  cd ~/environment/manifests/alb-ingress-controller
+ 1234  ls -al
+ 1235  cat v2_2_1_full.yaml 
+ 1236  kubectl describe pod -n kube-system ${ALBPOD}
+ 1237  cd ~/environment/manifests/
+ 1238  ls -al
+ 1239  kubectl get pod
+ 1240  kubectl apply -f backend-deployment.yaml
+ 1241  kubectl get pod
+ 1242  kubectl apply -f backend-service.yaml
+ 1243  kubectl get svc
+ 1244  kubectl apply -f backend-ingress.yaml
+ 1245  kubectl get ingress
+ 1246  echo http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/dump/all
+ 1247  kubectl get pod
+ 1248  kubectl get svc
+ 1249  echo http://$(kubectl get ingress/backend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')
+ 1250  cd ~/environment/sample-react-app
+ 1251  vi nginx.conf
+ 1252  cat nginx.conf 
+ 1253  npm run build
+ 1254  aws ecr get-login-password --region ap-northeast-3 | docker login --username AWS --password-stdin 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com
+ 1255  docker build -t sample-react-app .
+ 1256  docker tag sample-react-app:latest 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+ 1257  docker push 907101249682.dkr.ecr.ap-northeast-3.amazonaws.com/sample-react-app:latest
+ 1258  docker images -a
+ 1259  docker rmi --force 84db84d5cae8
+ 1260  docker images -0a
+ 1261  docker images -a
+ 1262  cd ~/environment/manifests/
+ 1263  kubectl get pod
+ 1264  kubectl apply -f frontend-deployment.yaml
+ 1265  kubectl get pod
+ 1266  kubectl apply -f frontend-service.yaml
+ 1267  kubectl get xvc
+ 1268  kubectl get svc
+ 1269  kubectl apply -f frontend-ingress.yaml
+ 1270  kubectl get ingress
+ 1271  echo http://$(kubectl get ingress/frontend-ingress -o jsonpath='{.status.loadBalancer.ingress[*].hostname}')/
+ 1272  cd ~/environment/
+ 1273  ls -al
+ 1274  cd myapp-repo/
+ 1275  ls -al
+ 1276  cat Dockerfile
+ 1277  cd ../
+ 1278  cat ecr-policy.json
+ 1279  cd ~/environment/myapp-repo/.github/workflows
+ 1280  ls -al
+ 1281  cat build.yaml 
+ 1282  vi build.yaml 
+ 1283  cat build.yaml 
+ 1284  ARGO_PWD=`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d`
+ 1285  export ARGOCD_SERVER=`kubectl get svc argocd-server -n argocd -o json | jq --raw-output .status.loadBalancer.ingress[0].hostname`
+ 1286  kubectl get po
+ 1287  kubectl get ns
+ 1288  kubectl create namespace argocd
+ 1289  kubectl get ns
+ 1290  kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+ 1291  kubectl get po
+ 1292  kubectl get po -n argocd
+ 1293  cd ~/environment
+ 1294  VERSION=$(curl --silent "https://api.github.com/repos/argoproj/argo-cd/releases/latest" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+ 1295  sudo curl --silent --location -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/$VERSION/argocd-linux-amd64
+ 1296  sudo chmod +x /usr/local/bin/argocd
+ 1297  kubectl patch svc argocd-server -n argocd -p '{"spec": {"type": "LoadBalancer"}}'
+ 1298  kubectl get pod
+ 1299  kubectl get svc
+ 1300  kubectl get ingress
+ 1301  export ARGOCD_SERVER=`kubectl get svc argocd-server -n argocd -o json | jq --raw-output .status.loadBalancer.ingress[0].hostname`
+ 1302  echo $ARGOCD_SERVER
+ 1303  ARGO_PWD=`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d`
+ 1304  echo $ARGO_PWD
+ 1305  mkubectl get pod
+ 1306  kubectl get pod
+ 1307  ls -al
+ 1308  kubectl get pod
+ 1309  cd ~/environment/myapp-repo/.github/workflows
+ 1310  ls -al
+ 1311  vi build.yaml 
+ 1312  1
+ 1313  kubectl get pod
+ 1314  kubectl describe pod 
+ 1315  history
+ 1316  history > his.log
