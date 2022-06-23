@@ -71,5 +71,5 @@ jobs:
           cd manifest-repo
           git config --global user.email "thenewhope@naver.com"
           git config --global user.name "bomi25kim"
-          git commit -am "Update image tag Day32"
+          git commit -am "Update image tag Day4"
           git push -u origin main
